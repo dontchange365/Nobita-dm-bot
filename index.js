@@ -1,9 +1,10 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core'); // Changed from puppeteer
+const chrome = require('chrome-aws-lambda'); // Added
+
 const app = express();
 
 app.get('/auto-dm', async (req, res) => {
-  // It's highly recommended to use environment variables for sensitive info
   const INSTA_USERNAME = process.env.INSTA_USERNAME || 'YOUR_USERNAME'; // REPLACE with your actual username or use ENV
   const INSTA_PASSWORD = process.env.INSTA_PASSWORD || 'YOUR_PASSWORD'; // REPLACE with your actual password or use ENV
 
@@ -14,17 +15,11 @@ app.get('/auto-dm', async (req, res) => {
   let browser;
   try {
     browser = await puppeteer.launch({
-      headless: true, // true for production, false for debugging
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process', // This might help on some environments
-        '--disable-gpu'
-      ]
+      args: [...chrome.args, '--hide-scrollbars', '--disable-web-security'], // Use chrome-aws-lambda args
+      defaultViewport: chrome.defaultViewport,
+      executablePath: await chrome.executablePath, // Use chrome-aws-lambda's executable path
+      headless: chrome.headless, // Use chrome-aws-lambda's headless setting (true)
+      ignoreHTTPSErrors: true
     });
     const page = await browser.newPage();
 
@@ -32,13 +27,11 @@ app.get('/auto-dm', async (req, res) => {
     await page.type('input[name="username"]', INSTA_USERNAME, { delay: 100 });
     await page.type('input[name="password"]', INSTA_PASSWORD, { delay: 100 });
 
-    // Click the login button (adjust selector if Instagram changes it)
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle2' }),
         page.click('button[type="submit"]') // Common selector for login button
     ]);
 
-    // Check if login was successful or if there's a security challenge
     if (page.url().includes('/accounts/login/')) {
         console.error('Login failed, check username/password or if Instagram requires verification.');
         return res.status(401).send('Login failed. Check your Instagram credentials or if Instagram is asking for verification (e.g., OTP).');
@@ -46,8 +39,6 @@ app.get('/auto-dm', async (req, res) => {
 
     await page.goto('https://www.instagram.com/direct/inbox/', { waitUntil: 'networkidle2' });
 
-    // Wait for DM list to load and click on the first conversation
-    // This selector might change, adjust if needed
     await page.waitForSelector('div[role="button"][tabindex="0"]', { timeout: 10000 });
     const firstChat = await page.$('div[role="button"][tabindex="0"]');
     if (firstChat) {
@@ -57,7 +48,6 @@ app.get('/auto-dm', async (req, res) => {
         return res.status(404).send('No active chat found to send a message. Make sure you have at least one conversation in your inbox.');
     }
 
-    // Wait for the message textarea to appear
     await page.waitForSelector('textarea[placeholder="Message..."]', { timeout: 10000 });
     await page.type('textarea[placeholder="Message..."]', 'Auto reply from Nobita 🤖, via Render deployment!', { delay: 50 });
     await page.keyboard.press('Enter');
@@ -74,6 +64,5 @@ app.get('/auto-dm', async (req, res) => {
   }
 });
 
-// Render provides a PORT environment variable, use it
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Bot Server Running on port ${PORT}`));
