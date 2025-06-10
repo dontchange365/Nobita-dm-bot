@@ -1,12 +1,14 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core'); // Changed from puppeteer
-const chrome = require('chrome-aws-lambda'); // Added
-
+const puppeteer = require('puppeteer');
 const app = express();
 
+app.get('/', (req, res) => {
+  res.send('Nobita DM Bot is running! Access the bot functionality at /auto-dm');
+});
+
 app.get('/auto-dm', async (req, res) => {
-  const INSTA_USERNAME = process.env.INSTA_USERNAME || 'YOUR_USERNAME'; // REPLACE with your actual username or use ENV
-  const INSTA_PASSWORD = process.env.INSTA_PASSWORD || 'YOUR_PASSWORD'; // REPLACE with your actual password or use ENV
+  const INSTA_USERNAME = process.env.INSTA_USERNAME || 'YOUR_USERNAME';
+  const INSTA_PASSWORD = process.env.INSTA_PASSWORD || 'YOUR_PASSWORD';
 
   if (INSTA_USERNAME === 'YOUR_USERNAME' || INSTA_PASSWORD === 'YOUR_PASSWORD') {
       return res.status(400).send('Please set INSTA_USERNAME and INSTA_PASSWORD environment variables or replace placeholders in index.js.');
@@ -15,11 +17,17 @@ app.get('/auto-dm', async (req, res) => {
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: [...chrome.args, '--hide-scrollbars', '--disable-web-security'], // Use chrome-aws-lambda args
-      defaultViewport: chrome.defaultViewport,
-      executablePath: await chrome.executablePath, // Use chrome-aws-lambda's executable path
-      headless: chrome.headless, // Use chrome-aws-lambda's headless setting (true)
-      ignoreHTTPSErrors: true
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
     });
     const page = await browser.newPage();
 
@@ -29,7 +37,7 @@ app.get('/auto-dm', async (req, res) => {
 
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle2' }),
-        page.click('button[type="submit"]') // Common selector for login button
+        page.click('button[type="submit"]')
     ]);
 
     if (page.url().includes('/accounts/login/')) {
