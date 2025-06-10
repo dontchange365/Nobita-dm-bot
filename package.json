@@ -1,0 +1,22 @@
+{
+  "name": "nobita-bot",
+  "version": "1.0.0",
+  "description": "An auto Instagram DM reply bot deployed on Render.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "instagram",
+    "bot",
+    "dm",
+    "puppeteer",
+    "render"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^21.3.8"
+  }
+}
