@@ -2,12 +2,6 @@ services:
   - type: web
     name: nobita-bot
     env: node
-    plan: free # Can use 'starter' or 'pro' for more resources/features
-    buildCommand: npm install
+    plan: free
+    buildCommand: npm install && npx puppeteer browsers install chrome # <-- Yeh line update karni hai
     startCommand: node index.js
-    # You can add environment variables here directly or through Render's UI
-    # envVars:
-    #   - key: INSTA_USERNAME
-    #     value: your_insta_username
-    #   - key: INSTA_PASSWORD
-    #     value: your_insta_password
